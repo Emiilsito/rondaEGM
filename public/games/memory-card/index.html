@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Memory Card</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1524; font-family: system-ui, sans-serif; color: #fff; }
+#root { height: 100%; display: grid; grid-template-rows: auto 1fr auto; gap: 14px; padding: 72px 16px 20px; }
+#hint { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7,16,24,.72); z-index: 5; cursor: pointer; backdrop-filter: blur(4px); text-align: center; }
+#prompt { text-align: center; font-size: 1.1rem; font-weight: 700; }
+#grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 340px; width: 100%; margin: 0 auto; align-content: center; }
+.card { aspect-ratio: 1; border-radius: 12px; background: #4a9eff; display: grid; place-items: center; font-size: 1.8rem; cursor: pointer; transition: transform .3s ease, background .3s ease; transform-style: preserve-3d; }
+.card.flipped { background: rgba(255,255,255,.1); transform: rotateY(180deg); }
+.card.matched { background: rgba(200,245,66,.3); opacity: .5; }
+.card .front { display: none; }
+.card.flipped .front { display: block; transform: rotateY(180deg); }
+.card .back { display: block; }
+.card.flipped .back { display: none; }
+#scoreline { text-align: center; font-size: 1.1rem; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="hint"><div><strong style="font-size:1.4rem;display:block;margin-bottom:.35rem">Toca para empezar</strong><span style="opacity:.7">Encuentra las parejas</span></div></div>
+<div id="root">
+  <div id="prompt">Encuentra las parejas</div>
+  <div id="grid"></div>
+  <div id="scoreline">0 parejas</div>
+</div>
+<script>
+const GAME_ID = "memory-card";
+const EMOJIS = ["🍎", "🍊", "🍋", "🍇", "🍓", "🍑", "🍒", "🥝"];
+let seed = 1, rnd = Math.random, hostReady = false, started = false, finished = false;
+let first = null, second = null, lock = false, matches = 0;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function post(msg){parent.postMessage({...msg, gameId: GAME_ID}, "*")}
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+function makeGrid(){
+  const cards = shuffle([...EMOJIS, ...EMOJIS]);
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  for (const emoji of cards) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "card";
+    card.dataset.emoji = emoji;
+    card.innerHTML = '<span class="front">' + emoji + '</span><span class="back">?</span>';
+    card.addEventListener("click", () => flip(card));
+    grid.appendChild(card);
+  }
+}
+
+function flip(card){
+  if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+  card.classList.add("flipped");
+  if (!first) {
+    first = card;
+  } else {
+    second = card;
+    lock = true;
+    if (first.dataset.emoji === second.dataset.emoji) {
+      first.classList.add("matched");
+      second.classList.add("matched");
+      matches++;
+      document.getElementById("scoreline").textContent = matches + " parejas";
+      post({type:"score", score: matches});
+      first = null;
+      second = null;
+      lock = false;
+      if (matches === EMOJIS.length) finish();
+    } else {
+      setTimeout(() => {
+        first.classList.remove("flipped");
+        second.classList.remove("flipped");
+        first = null;
+        second = null;
+        lock = false;
+      }, 800);
+    }
+  }
+}
+
+function finish(){
+  if (finished) return;
+  finished = true;
+  post({type:"finished", score: matches});
+}
+
+function start(){
+  if (started || !hostReady) return;
+  started = true;
+  document.getElementById("hint").style.display = "none";
+  post({type:"started"});
+  post({type:"score", score:0});
+  makeGrid();
+}
+
+window.addEventListener("message", (e)=>{
+  const d=e.data; if(!d||typeof d!=="object") return;
+  if(d.type==="hostReady"){
+    hostReady=true;
+    if(typeof d.seed==="number"){ seed=d.seed>>>0; rnd=mulberry32(seed); }
+  }
+});
+
+const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const s = Number(hash.get("seed")); if (Number.isFinite(s)) seed = s>>>0;
+rnd = mulberry32(seed);
+document.getElementById("hint").addEventListener("click", start);
+post({type:"ready", version:"1.0.0"});
+</script>
+</body>
+</html>

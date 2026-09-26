@@ -1,41 +1,26 @@
 import { cn } from "@/lib/utils";
-import { StyleSwitcher } from "@/components/style-switcher";
 
 export function AppShell({
   children,
   className,
-  showStyleLink = true,
 }: {
   children: React.ReactNode;
   className?: string;
-  showStyleLink?: boolean;
 }) {
   return (
-    <div className="relative min-h-full overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{ background: "var(--page-wash)" }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-90"
-        style={{
-          backgroundImage: "var(--pattern)",
-          backgroundSize: "var(--pattern-size)",
-        }}
-      />
+
       <div
         className={cn(
-          "relative z-10 mx-auto flex min-h-full w-full max-w-md flex-col px-4 pb-10 pt-5 sm:px-5",
+          "relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-12 pt-6 sm:px-5",
           className,
         )}
       >
-        {showStyleLink && (
-          <div className="mb-3 flex justify-end">
-            <StyleSwitcher compact />
-          </div>
-        )}
         {children}
       </div>
     </div>
@@ -50,9 +35,9 @@ export function BrandMark({
   light?: boolean;
 }) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2.5", className)}>
       <span
-        className="grid size-9 place-items-center rounded-2xl text-lg shadow-[var(--soft-shadow)]"
+        className="grid size-10 place-items-center rounded-2xl text-xl shadow-[var(--soft-shadow)] transition-transform duration-300 hover:scale-110 hover:rotate-12"
         style={{
           background: "var(--accent)",
           color: "var(--accent-ink)",
@@ -85,7 +70,7 @@ export function AvatarStack({
       {names.slice(0, 4).map((name, i) => (
         <span
           key={`${name}-${i}`}
-          className="avatar-ring"
+          className="avatar-ring animate-pop"
           style={{
             width: size,
             height: size,
@@ -97,6 +82,7 @@ export function AvatarStack({
               "linear-gradient(145deg,#ffe8a3,#ffb4a2)",
               "linear-gradient(145deg,#d7c6ff,#9ad7ff)",
             ][i % 4],
+            animationDelay: `${i * 0.08}s`,
           }}
         >
           {name.slice(0, 1).toUpperCase()}

@@ -40,9 +40,19 @@ export default function JoinGroupPage() {
 
       <form
         className="mt-8 space-y-4"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          const result = joinGroup(code);
+          setError(null);
+          const trimmed = code.trim();
+          if (trimmed.length < 4) {
+            setError("El código debe tener al menos 4 caracteres.");
+            return;
+          }
+          if (trimmed.length > 8) {
+            setError("El código no puede tener más de 8 caracteres.");
+            return;
+          }
+          const result = await joinGroup(trimmed);
           if (!result.ok) {
             setError(result.error ?? "No se pudo unir.");
             return;

@@ -24,10 +24,12 @@ export default function OnboardingPage() {
 
       <form
         className="mt-8 space-y-4"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (!name.trim()) return;
-          setPlayerName(name);
+          const trimmed = name.trim();
+          if (trimmed.length < 2) return;
+          if (trimmed.length > 24) return;
+          await setPlayerName(trimmed);
           router.push("/");
         }}
       >

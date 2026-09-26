@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Sequence Memory</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1524; font-family: system-ui, sans-serif; color: #fff; }
+#root { height: 100%; display: grid; grid-template-rows: auto 1fr auto; gap: 16px; padding: 72px 16px 20px; }
+#hint { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7,16,24,.72); z-index: 5; cursor: pointer; backdrop-filter: blur(4px); text-align: center; }
+#status { text-align: center; font-size: 1.1rem; font-weight: 700; }
+#pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 320px; width: 100%; margin: 0 auto; align-content: center; }
+.cell { aspect-ratio: 1; border-radius: 16px; background: rgba(255,255,255,.1); cursor: pointer; transition: transform .1s ease, background .15s ease; }
+.cell:active { transform: scale(0.95); }
+.cell.lit { background: #4a9eff; }
+#level { text-align: center; color: #C8F542; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="hint"><div><strong style="font-size:1.4rem;display:block;margin-bottom:.35rem">Toca para empezar</strong><span style="opacity:.7">Memoriza y repite la secuencia</span></div></div>
+<div id="root">
+  <div id="level">Nivel 1</div>
+  <div id="pad"></div>
+  <div id="status">Observa…</div>
+</div>
+<script>
+const GAME_ID = "sequence-memory";
+let seed = 1, rnd = Math.random, hostReady = false, started = false, finished = false;
+let sequence = [], inputIndex = 0, level = 1, accepting = false;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function post(msg){parent.postMessage({...msg, gameId: GAME_ID}, "*")}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+async function flash(i){
+  const cells = document.querySelectorAll(".cell");
+  cells[i].classList.add("lit");
+  await sleep(400);
+  cells[i].classList.remove("lit");
+  await sleep(120);
+}
+
+async function playSequence(){
+  accepting = false;
+  document.getElementById("status").textContent = "Observa…";
+  await sleep(400);
+  for (const i of sequence) await flash(i);
+  accepting = true;
+  inputIndex = 0;
+  document.getElementById("status").textContent = "Tu turno";
+}
+
+function nextRound(){
+  sequence.push(Math.floor(rnd() * 9));
+  level++;
+  document.getElementById("level").textContent = "Nivel " + level;
+  post({type:"score", score: level});
+  playSequence();
+}
+
+function onCell(i){
+  if (!accepting || finished) return;
+  if (sequence[inputIndex] !== i) {
+    finished = true;
+    accepting = false;
+    document.getElementById("status").textContent = "Fin · nivel " + level;
+    post({type:"finished", score: level});
+    return;
+  }
+  inputIndex += 1;
+  if (inputIndex >= sequence.length) {
+    accepting = false;
+    document.getElementById("status").textContent = "¡Bien!";
+    setTimeout(nextRound, 500);
+  }
+}
+
+function start(){
+  if (started || !hostReady) return;
+  started = true;
+  document.getElementById("hint").style.display = "none";
+  post({type:"started"});
+  post({type:"score", score: 1});
+  nextRound();
+}
+
+window.addEventListener("message", (e)=>{
+  const d=e.data; if(!d||typeof d!=="object") return;
+  if(d.type==="hostReady"){
+    hostReady=true;
+    if(typeof d.seed==="number"){ seed=d.seed>>>0; rnd=mulberry32(seed); }
+  }
+});
+
+const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const s = Number(hash.get("seed")); if (Number.isFinite(s)) seed = s>>>0;
+rnd = mulberry32(seed);
+const pad = document.getElementById("pad");
+for (let i = 0; i < 9; i++) {
+  const cell = document.createElement("button");
+  cell.type = "button";
+  cell.className = "cell";
+  cell.addEventListener("click", () => onCell(i));
+  pad.appendChild(cell);
+}
+document.getElementById("hint").addEventListener("click", start);
+post({type:"ready", version:"1.0.0"});
+</script>
+</body>
+</html>

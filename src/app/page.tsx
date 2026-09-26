@@ -43,12 +43,9 @@ export default function HomePage() {
           <Link href="/onboarding" className="cta-primary">
             Empezar
           </Link>
-          <Link
-            href="/estilos"
-            className="block text-center text-sm font-bold text-[color:var(--muted)] underline underline-offset-4"
-          >
-            Ver 3 estilos visuales
-          </Link>
+          <p className="text-center text-sm font-semibold text-[color:var(--muted)]">
+            Temporada de 21 días. Un minijuevo cada día.
+          </p>
         </div>
       </AppShell>
     );

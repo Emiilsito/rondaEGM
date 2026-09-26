@@ -24,8 +24,12 @@ export function GameHost({ game, seed, className, onFinished }: GameHostProps) {
   const [liveScore, setLiveScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const finishedRef = useRef(false);
+  const prevGameRef = useRef<{ id: string; seed: number } | null>(null);
 
   useEffect(() => {
+    const prev = prevGameRef.current;
+    if (prev && prev.id === game.id && prev.seed === seed) return;
+    prevGameRef.current = { id: game.id, seed };
     finishedRef.current = false;
     setPhase("loading");
     setLiveScore(null);

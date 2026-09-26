@@ -136,33 +136,43 @@ export default function RankPage() {
       <BrandMark />
       <NavPills groupCode={group.code} active="rank" />
 
-      <section className="mt-5">
+      <section className="animate-pop mt-6">
         <div className="text-center">
-          <p className="font-[family-name:var(--font-display)] text-3xl font-bold text-[color:var(--ink)]">
+          <p className="font-[family-name:var(--font-display)] text-4xl font-bold text-[color:var(--ink)] tracking-tight">
             SEASON 1
           </p>
-          <p className="mt-1 text-sm font-bold text-[color:var(--muted)]">
+          <p className="mt-2 text-sm font-bold text-[color:var(--muted)]">
             Día {dayIndex + 1} / {SEASON_DAYS}
           </p>
-          <p className="bubble-title mt-3 text-4xl">SKILLS</p>
+          <p className="bubble-title mt-4 text-5xl">SKILLS</p>
         </div>
 
-        <div className="mt-5">
+        <div className="animate-pop-delay mt-6">
           <Podium rows={seasonRows} game={seasonGame} />
         </div>
       </section>
 
-      <section className="mt-8">
-        <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-bold text-[color:var(--ink)]">
-          Hoy · {game.name}
-        </h2>
+      <section className="animate-pop-delay-2 mt-10">
+        <div className="mb-4 flex items-end justify-between">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[color:var(--ink)]">
+            Hoy · {game.name}
+          </h2>
+          <span className="text-xs font-bold text-[color:var(--muted)]">
+            {todayRows.filter((r) => r.score != null).length} jugaron
+          </span>
+        </div>
         <Leaderboard rows={todayRows} game={game} dark />
       </section>
 
-      <section className="mt-8">
-        <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-bold text-[color:var(--ink)]">
-          Clasificación
-        </h2>
+      <section className="animate-pop-delay-2 mt-10">
+        <div className="mb-4 flex items-end justify-between">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[color:var(--ink)]">
+            Clasificación
+          </h2>
+          <span className="text-xs font-bold text-[color:var(--muted)]">
+            {seasonRows.filter((r) => (r.score ?? 0) > 0).length} con puntos
+          </span>
+        </div>
         <Leaderboard rows={seasonRows} game={seasonGame} dark />
       </section>
     </AppShell>

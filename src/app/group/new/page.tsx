@@ -41,9 +41,12 @@ export default function NewGroupPage() {
 
       <form
         className="mt-8 space-y-4"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          const group = createNewGroup(name || "Cool group");
+          const trimmed = name.trim();
+          if (trimmed.length < 2) return;
+          if (trimmed.length > 32) return;
+          const group = await createNewGroup(trimmed || "Mi grupo");
           if (group) router.push(`/group/${group.code}`);
         }}
       >

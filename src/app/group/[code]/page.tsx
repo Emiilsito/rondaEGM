@@ -42,6 +42,12 @@ export default function GroupHomePage() {
     if (group) setActiveGroup(group.id);
   }, [group, setActiveGroup]);
 
+  useEffect(() => {
+    if (ready && !player) {
+      router.replace("/onboarding");
+    }
+  }, [ready, player, router]);
+
   const practiceUsed =
     player && group
       ? countAttempts(attempts, group.id, player.id, dayKey, "practice")
@@ -148,15 +154,15 @@ export default function GroupHomePage() {
         </div>
 
         <div className="hero-panel relative overflow-hidden p-5">
-          <div className="absolute right-3 top-3 pill bg-black/80 text-white">
+          <div className="absolute right-3 top-3 pill bg-black/70 text-white backdrop-blur-sm">
             ⏳ Día {dayIndex + 1}/{SEASON_DAYS}
           </div>
 
           <div className="mt-6 grid place-items-center">
-            <div className="animate-floaty relative h-36 w-full max-w-[220px]">
-              <div className="absolute inset-x-6 top-4 h-24 rounded-[28px] bg-[#ffe14a] opacity-90" />
-              <div className="absolute left-1/2 top-10 size-14 -translate-x-1/2 rounded-full bg-[#ff5c6a] shadow-lg" />
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1 text-xs font-extrabold text-[#1a1a1f]">
+            <div className="animate-floaty relative h-40 w-full max-w-[240px]">
+              <div className="absolute inset-x-4 top-2 h-28 rounded-[24px] bg-gradient-to-br from-[color:var(--accent)] to-[color:var(--warn)] opacity-90 shadow-lg" />
+              <div className="absolute left-1/2 top-8 size-16 -translate-x-1/2 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-xl" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1.5 text-xs font-extrabold text-[#1a1a1f] shadow-lg">
                 {game?.name}
               </div>
             </div>
@@ -174,14 +180,14 @@ export default function GroupHomePage() {
           <p className="mt-1 text-sm font-bold text-[#1a1a1f]">{game?.tip}</p>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-[#f4f1ea] px-3 py-3">
+            <div className="rounded-2xl bg-[color:var(--surface-muted)] px-3 py-3">
               <p className="text-[11px] font-bold text-black/40">Práctica</p>
               <p className="font-[family-name:var(--font-display)] text-xl font-bold text-[#1a1a1f]">
                 {Math.max(0, PRACTICE_ATTEMPTS - practiceUsed)}/
                 {PRACTICE_ATTEMPTS}
               </p>
             </div>
-            <div className="rounded-2xl bg-[#f4f1ea] px-3 py-3">
+            <div className="rounded-2xl bg-[color:var(--surface-muted)] px-3 py-3">
               <p className="text-[11px] font-bold text-black/40">Oficiales</p>
               <p className="font-[family-name:var(--font-display)] text-xl font-bold text-[#1a1a1f]">
                 {Math.max(0, OFFICIAL_ATTEMPTS - officialUsed)}/
@@ -191,9 +197,9 @@ export default function GroupHomePage() {
           </div>
 
           {yourBest !== null && game && (
-            <p className="mt-3 text-sm font-bold text-black/55">
+            <p className="mt-3 text-sm font-bold text-black/50">
               Tu mejor hoy:{" "}
-              <span className="text-[#1a1a1f]">
+              <span className="font-extrabold text-[#1a1a1f]">
                 {displayScore(yourBest, game)}
               </span>
             </p>

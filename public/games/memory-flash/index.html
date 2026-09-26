@@ -20,13 +20,15 @@
       .cell {
         aspect-ratio: 1; border: 0; border-radius: 18px; font-size: 1.4rem; font-weight: 700;
         color: #071018; cursor: pointer; touch-action: manipulation;
-        transition: transform .1s ease, filter .15s ease, opacity .15s ease;
+        transition: transform .1s ease, filter .15s ease, opacity .15s ease, box-shadow .15s ease;
       }
       .cell:active { transform: scale(0.96); }
-      .cell.lit { filter: brightness(1.35); box-shadow: 0 0 0 3px rgba(200,245,66,.55); }
+      .cell.lit { filter: brightness(1.35); box-shadow: 0 0 0 3px rgba(200,245,66,.55), 0 0 20px rgba(200,245,66,.3); }
       .cell:disabled { opacity: .55; cursor: default; }
       #level { text-align: center; color: #C8F542; font-weight: 600; letter-spacing: .04em; }
       .c0 { background: #5eead4; } .c1 { background: #fda4af; } .c2 { background: #fde68a; } .c3 { background: #a5b4fc; }
+      @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+      .cell.lit { animation: pulse .3s ease; }
     </style>
   </head>
   <body>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Hole Rush</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1524; font-family: system-ui, sans-serif; color: #fff; }
+#root { height: 100%; position: relative; overflow: hidden; }
+#hint { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7,16,24,.72); z-index: 5; cursor: pointer; backdrop-filter: blur(4px); text-align: center; }
+#timer { position: absolute; top: 20px; left: 0; right: 0; text-align: center; color: #C8F542; font-weight: 700; font-size: 1.1rem; z-index: 2; }
+#scoreline { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 1.1rem; font-weight: 700; z-index: 2; }
+.player { position: absolute; bottom: 60px; width: 50px; height: 50px; background: #4a9eff; border-radius: 50%; transition: left .05s linear; }
+.hole { position: absolute; width: 70px; height: 70px; border-radius: 50%; background: #1a1a2e; border: 4px solid #ff5c3a; }
+</style>
+</head>
+<body>
+<div id="hint"><div><strong style="font-size:1.4rem;display:block;margin-bottom:.35rem">Toca para empezar</strong><span style="opacity:.7">20 segundos · cae en los agujeros</span></div></div>
+<div id="root">
+  <div id="timer">20s</div>
+  <div class="player" id="player"></div>
+  <div id="scoreline">0 pts</div>
+</div>
+<script>
+const GAME_ID = "hole-rush";
+const DURATION = 20;
+let seed = 1, rnd = Math.random, hostReady = false, started = false, finished = false;
+let score = 0, endsAt = 0, playerX = 50, holes = [];
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a,a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function post(msg){parent.postMessage({...msg, gameId: GAME_ID}, "*")}
+
+function spawn(){
+  if (finished) return;
+  const hole = document.createElement("div");
+  hole.className = "hole";
+  hole.style.left = (15 + rnd() * 65) + "%";
+  hole.style.top = "0";
+  document.getElementById("root").appendChild(hole);
+  holes.push({ el: hole, y: 0, speed: 3 + rnd() * 4 });
+  setTimeout(spawn, 400 + rnd() * 600);
+}
+
+function movePlayer(e){
+  if (!started || finished) return;
+  const touch = e.touches ? e.touches[0] : e;
+  const rect = document.getElementById("root").getBoundingClientRect();
+  playerX = ((touch.clientX - rect.left) / rect.width) * 100;
+  document.getElementById("player").style.left = "calc(" + playerX + "% - 25px)";
+}
+
+function tick(){
+  if (!started || finished) return;
+  const left = Math.max(0, Math.ceil((endsAt - performance.now()) / 1000));
+  document.getElementById("timer").textContent = left + "s";
+  if (left <= 0) {
+    finished = true;
+    post({type:"finished", score});
+    return;
+  }
+  const player = document.getElementById("player");
+  const playerRect = player.getBoundingClientRect();
+  for (let i = holes.length - 1; i >= 0; i--) {
+    const hole = holes[i];
+    hole.y += hole.speed;
+    hole.el.style.top = hole.y + "px";
+    const holeRect = hole.el.getBoundingClientRect();
+    if (holeRect.bottom > playerRect.top && holeRect.top < playerRect.bottom &&
+        holeRect.left < playerRect.right && holeRect.right > playerRect.left) {
+      hole.el.remove();
+      holes.splice(i, 1);
+      score += 1;
+      document.getElementById("scoreline").textContent = score + " pts";
+      post({type:"score", score});
+    } else if (hole.y > window.innerHeight) {
+      hole.el.remove();
+      holes.splice(i, 1);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function start(){
+  if (started || !hostReady) return;
+  started = true;
+  document.getElementById("hint").style.display = "none";
+  endsAt = performance.now() + DURATION * 1000;
+  post({type:"started"});
+  post({type:"score", score:0});
+  spawn();
+  requestAnimationFrame(tick);
+}
+
+window.addEventListener("message", (e)=>{
+  const d=e.data; if(!d||typeof d!=="object") return;
+  if(d.type==="hostReady"){
+    hostReady=true;
+    if(typeof d.seed==="number"){ seed=d.seed>>>0; rnd=mulberry32(seed); }
+  }
+});
+
+const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const s = Number(hash.get("seed")); if (Number.isFinite(s)) seed = s>>>0;
+rnd = mulberry32(seed);
+document.getElementById("hint").addEventListener("click", start);
+document.getElementById("root").addEventListener("touchmove", movePlayer);
+document.getElementById("root").addEventListener("mousemove", movePlayer);
+post({type:"ready", version:"1.0.0"});
+</script>
+</body>
+</html>

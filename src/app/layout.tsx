@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import { RondaProvider } from "@/components/ronda-provider";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { ToastProvider } from "@/components/toast";
 import "./globals.css";
 
 const display = Fredoka({
@@ -26,13 +27,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      data-theme="club"
+      data-scroll-behavior="smooth"
       className={`${display.variable} ${sans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <ThemeProvider>
-          <RondaProvider>{children}</RondaProvider>
-        </ThemeProvider>
+        <ToastProvider>
+          <ErrorBoundary>
+            <RondaProvider>{children}</RondaProvider>
+          </ErrorBoundary>
+        </ToastProvider>
       </body>
     </html>
   );

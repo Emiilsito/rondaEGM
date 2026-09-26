@@ -25,6 +25,7 @@ export type Group = {
   createdAt: string;
   seasonStart: string;
   memberIds: string[];
+  bonusAttempts?: Record<string, number>;
 };
 
 export type Attempt = {

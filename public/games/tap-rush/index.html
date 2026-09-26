@@ -23,17 +23,31 @@
         transform: translate(-50%, -50%) scale(0.85);
         transition: transform .08s ease;
         touch-action: manipulation;
+        animation: pop-in .3s cubic-bezier(0.16, 1, 0.3, 1) both;
       }
       .target:active { transform: translate(-50%, -50%) scale(0.95); }
+      @keyframes pop-in {
+        from { transform: translate(-50%, -50%) scale(0); }
+        to { transform: translate(-50%, -50%) scale(0.85); }
+      }
       #hud {
         position: absolute; left: 16px; right: 16px; bottom: 18px;
         display: flex; justify-content: space-between; color: rgba(255,255,255,.75); font-size: .85rem;
+      }
+      #progress {
+        position: absolute; top: 16px; left: 16px; right: 16px;
+        height: 6px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden;
+      }
+      #progress-bar {
+        height: 100%; background: linear-gradient(90deg, #ff5c3a, #ff8f73);
+        border-radius: 3px; transition: width .2s ease;
       }
     </style>
   </head>
   <body>
     <div id="root">
       <div id="hint"><div style="text-align:center"><strong>Toca para empezar</strong><span>12 objetivos · lo más rápido posible</span></div></div>
+      <div id="progress"><div id="progress-bar" style="width: 0%"></div></div>
       <div id="hud"><span id="left">12 restantes</span><span id="time">0.00s</span></div>
     </div>
     <script>
@@ -83,6 +97,8 @@
           if (!started || finished) return;
           remaining -= 1;
           document.getElementById("left").textContent = remaining + " restantes";
+          const progress = ((TOTAL - remaining) / TOTAL) * 100;
+          document.getElementById("progress-bar").style.width = progress + "%";
           const elapsed = (performance.now() - startAt) / 1000;
           post({ type: "score", score: -elapsed });
           if (remaining <= 0) {

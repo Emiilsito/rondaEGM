@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Timing Game</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1524; font-family: system-ui, sans-serif; color: #fff; }
+#root { height: 100%; display: grid; place-items: center; position: relative; }
+#hint { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7,16,24,.72); z-index: 5; cursor: pointer; backdrop-filter: blur(4px); text-align: center; }
+#circle { width: 200px; height: 200px; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem; font-weight: 800; cursor: pointer; transition: background .1s ease, transform .1s ease; }
+#circle:active { transform: scale(0.95); }
+#circle.idle { background: rgba(255,255,255,.1); }
+#circle.active { background: #C8F542; color: #071018; }
+#circle.hit { background: #4a9eff; }
+#circle.miss { background: #ff5c3a; }
+#hud { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; font-size: 1.1rem; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="hint"><div><strong style="font-size:1.4rem;display:block;margin-bottom:.35rem">Toca para empezar</strong><span style="opacity:.7">Para el círculo en el momento exacto</span></div></div>
+<div id="root">
+  <div id="circle" class="idle">...</div>
+  <div id="hud"></div>
+</div>
+<script>
+const GAME_ID = "timing-game";
+const ROUNDS = 10;
+let seed = 1, rnd = Math.random, hostReady = false, started = false, finished = false;
+let round = 0, score = 0, growing = true, size = 200, animating = false;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function post(msg){parent.postMessage({...msg, gameId: GAME_ID}, "*")}
+
+async function playRound(){
+  round++;
+  if (round > ROUNDS) return finish();
+  const circle = document.getElementById("circle");
+  circle.className = "idle";
+  circle.textContent = "...";
+  circle.style.width = "200px";
+  circle.style.height = "200px";
+  size = 200;
+  document.getElementById("hud").textContent = "Ronda " + round + "/" + ROUNDS;
+  await sleep(1000 + rnd() * 2000);
+  circle.className = "active";
+  circle.textContent = "¡Para!";
+  growing = true;
+  size = 200;
+  animating = true;
+  animate();
+}
+
+function animate(){
+  if (!animating) return;
+  if (growing) {
+    size += 2;
+    if (size >= 300) growing = false;
+  } else {
+    size -= 2;
+    if (size <= 200) growing = true;
+  }
+  const circle = document.getElementById("circle");
+  circle.style.width = size + "px";
+  circle.style.height = size + "px";
+  requestAnimationFrame(animate);
+}
+
+function tap(){
+  if (!started || finished || !animating) return;
+  animating = false;
+  const circle = document.getElementById("circle");
+  if (size >= 280 && size <= 300) {
+    circle.className = "hit";
+    circle.textContent = "¡Perfecto!";
+    score += 10;
+    post({type:"score", score});
+  } else if (size >= 250 && size < 280) {
+    circle.className = "hit";
+    circle.textContent = "Bien";
+    score += 5;
+    post({type:"score", score});
+  } else {
+    circle.className = "miss";
+    circle.textContent = "Fallo";
+    post({type:"score", score});
+  }
+  document.getElementById("hud").textContent = score + " pts";
+  setTimeout(playRound, 800);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function finish(){
+  if (finished) return;
+  finished = true;
+  post({type:"finished", score});
+}
+
+function start(){
+  if (started || !hostReady) return;
+  started = true;
+  document.getElementById("hint").style.display = "none";
+  post({type:"started"});
+  post({type:"score", score:0});
+  playRound();
+}
+
+window.addEventListener("message", (e)=>{
+  const d=e.data; if(!d||typeof d!=="object") return;
+  if(d.type==="hostReady"){
+    hostReady=true;
+    if(typeof d.seed==="number"){ seed=d.seed>>>0; rnd=mulberry32(seed); }
+  }
+});
+
+const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const s = Number(hash.get("seed")); if (Number.isFinite(s)) seed = s>>>0;
+rnd = mulberry32(seed);
+document.getElementById("hint").addEventListener("click", start);
+document.getElementById("circle").addEventListener("click", tap);
+post({type:"ready", version:"1.0.0"});
+</script>
+</body>
+</html>

@@ -13,20 +13,23 @@ export default function InvitePage() {
   const code = String(params.code || "").toUpperCase();
 
   useEffect(() => {
-    if (!ready) return;
-    if (!player) {
-      router.replace(`/onboarding`);
-      return;
+    async function handleInvite() {
+      if (!ready) return;
+      if (!player) {
+        router.replace(`/onboarding`);
+        return;
+      }
+      if (code === "RONDA1") {
+        ensureDemoGroup();
+        router.replace("/group/RONDA1");
+        return;
+      }
+      const result = await joinGroup(code);
+      if (result.ok && result.group) {
+        router.replace(`/group/${result.group.code}`);
+      }
     }
-    if (code === "RONDA1") {
-      ensureDemoGroup();
-      router.replace("/group/RONDA1");
-      return;
-    }
-    const result = joinGroup(code);
-    if (result.ok && result.group) {
-      router.replace(`/group/${result.group.code}`);
-    }
+    handleInvite();
   }, [ready, player, code, joinGroup, ensureDemoGroup, router]);
 
   return (

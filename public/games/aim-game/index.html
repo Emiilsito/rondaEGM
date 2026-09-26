@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Aim Game</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1524; font-family: system-ui, sans-serif; color: #fff; }
+#root { height: 100%; position: relative; overflow: hidden; }
+#hint { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(7,16,24,.72); z-index: 5; cursor: pointer; backdrop-filter: blur(4px); text-align: center; }
+#timer { position: absolute; top: 20px; left: 0; right: 0; text-align: center; color: #C8F542; font-weight: 700; font-size: 1.1rem; z-index: 2; }
+#scoreline { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 1.1rem; font-weight: 700; z-index: 2; }
+.target { position: absolute; width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ff8f73, #ff5c3a); box-shadow: 0 0 0 3px rgba(255,92,58,.3); cursor: pointer; transition: transform .05s ease; }
+.target:active { transform: scale(0.9); }
+</style>
+</head>
+<body>
+<div id="hint"><div><strong style="font-size:1.4rem;display:block;margin-bottom:.35rem">Toca para empezar</strong><span style="opacity:.7">15 segundos · apunta a los objetivos</span></div></div>
+<div id="root">
+  <div id="timer">15s</div>
+  <div id="scoreline">0 pts</div>
+</div>
+<script>
+const GAME_ID = "aim-game";
+const DURATION = 15;
+let seed = 1, rnd = Math.random, hostReady = false, started = false, finished = false;
+let score = 0, endsAt = 0;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a,a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function post(msg){parent.postMessage({...msg, gameId: GAME_ID}, "*")}
+
+function spawn(){
+  if (finished) return;
+  const target = document.createElement("div");
+  target.className = "target";
+  target.style.left = (10 + rnd() * 75) + "%";
+  target.style.top = (15 + rnd() * 60) + "%";
+  target.addEventListener("click", () => {
+    if (!started || finished) return;
+    score += 1;
+    document.getElementById("scoreline").textContent = score + " pts";
+    post({type:"score", score});
+    target.remove();
+    spawn();
+  });
+  document.getElementById("root").appendChild(target);
+  setTimeout(spawn, 300 + rnd() * 400);
+}
+
+function tick(){
+  if (!started || finished) return;
+  const left = Math.max(0, Math.ceil((endsAt - performance.now()) / 1000));
+  document.getElementById("timer").textContent = left + "s";
+  if (left <= 0) {
+    finished = true;
+    post({type:"finished", score});
+    return;
+  }
+  requestAnimationFrame(tick);
+}
+
+function start(){
+  if (started || !hostReady) return;
+  started = true;
+  document.getElementById("hint").style.display = "none";
+  endsAt = performance.now() + DURATION * 1000;
+  post({type:"started"});
+  post({type:"score", score:0});
+  spawn();
+  requestAnimationFrame(tick);
+}
+
+window.addEventListener("message", (e)=>{
+  const d=e.data; if(!d||typeof d!=="object") return;
+  if(d.type==="hostReady"){
+    hostReady=true;
+    if(typeof d.seed==="number"){ seed=d.seed>>>0; rnd=mulberry32(seed); }
+  }
+});
+
+const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const s = Number(hash.get("seed")); if (Number.isFinite(s)) seed = s>>>0;
+rnd = mulberry32(seed);
+document.getElementById("hint").addEventListener("click", start);
+post({type:"ready", version:"1.0.0"});
+</script>
+</body>
+</html>

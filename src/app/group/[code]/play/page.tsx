@@ -22,7 +22,7 @@ import type { AttemptKind } from "@/lib/types";
 export default function PlayPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
-  const { ready, player, groups, attempts, recordAttempt } = useRonda();
+  const { ready, player, groups, attempts, recordAttempt, bonusAttempts } = useRonda();
   const code = String(params.code || "").toUpperCase();
   const group = groups.find((g) => g.code === code) ?? null;
   const dayKey = dayKeyFromDate();
@@ -41,8 +41,9 @@ export default function PlayPage() {
       ? countAttempts(attempts, group.id, player.id, dayKey, "official")
       : 0;
 
+  const myBonus = player ? bonusAttempts[player.id] ?? 0 : 0;
   const practiceLeft = Math.max(0, PRACTICE_ATTEMPTS - practiceUsed);
-  const officialLeft = Math.max(0, OFFICIAL_ATTEMPTS - officialUsed);
+  const officialLeft = Math.max(0, OFFICIAL_ATTEMPTS + myBonus - officialUsed);
 
   const attemptIndex = useMemo(() => {
     if (!kind) return 0;
@@ -71,7 +72,7 @@ export default function PlayPage() {
       });
       setKind(null);
     },
-    [group, game, kind, recordAttempt],
+    [group, game, kind, recordAttempt, setLastScore, setKind],
   );
 
   if (!ready) {
@@ -108,26 +109,37 @@ export default function PlayPage() {
       <BrandMark />
       <NavPills groupCode={group.code} active="play" />
 
-      <div className="mt-5">
-        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-          Challenge
+      <div className="animate-pop mt-6">
+        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[color:var(--muted)]">
+          Challenge del día
         </p>
-        <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold text-[color:var(--ink)]">
+        <h1 className="font-[family-name:var(--font-display)] text-5xl font-bold text-[color:var(--ink)] leading-tight">
           {game.name}
         </h1>
-        <p className="mt-1 font-semibold text-[color:var(--muted)]">
+        <p className="mt-2 text-base font-semibold text-[color:var(--muted)]">
           {game.blurb}
         </p>
       </div>
 
       {!kind && (
-        <div className="animate-pop mt-6 space-y-3">
+        <div className="animate-pop-delay mt-8 space-y-4">
+          {myBonus > 0 && (
+            <div className="animate-scale-in rounded-2xl bg-[color:var(--accent)] p-3 text-center">
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#1a1a1f]">
+                Bonus de remontada
+              </p>
+              <p className="text-sm font-bold text-[#1a1a1f]">
+                Tienes +1 intento oficial hoy
+              </p>
+            </div>
+          )}
+
           {lastScore !== null && (
-            <div className="soft-card p-4">
-              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-black/40">
+            <div className="soft-card animate-scale-in p-5">
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-black/40">
                 Último intento
               </p>
-              <p className="bubble-title mt-1 text-4xl">
+              <p className="bubble-title mt-2 text-5xl">
                 {displayScore(lastScore, game)}
               </p>
             </div>
@@ -142,7 +154,7 @@ export default function PlayPage() {
               setKind("practice");
             }}
           >
-            Práctica · {practiceLeft} left
+            Práctica · {practiceLeft} restante{practiceLeft !== 1 ? "s" : ""}
           </Button>
           <Button
             disabled={officialLeft <= 0}
@@ -153,7 +165,7 @@ export default function PlayPage() {
               setKind("official");
             }}
           >
-            Intento oficial · {officialLeft} left
+            Intento oficial · {officialLeft} restante{officialLeft !== 1 ? "s" : ""}
           </Button>
 
           {officialLeft <= 0 && (
@@ -161,7 +173,7 @@ export default function PlayPage() {
               Sin oficiales.{" "}
               <Link
                 href={`/group/${group.code}/rank`}
-                className="underline"
+                className="underline underline-offset-4"
               >
                 Ver ranking
               </Link>
@@ -171,8 +183,8 @@ export default function PlayPage() {
       )}
 
       {kind && (
-        <div className="animate-pop mt-4">
-          <p className="mb-3 text-center text-xs font-extrabold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+        <div className="animate-pop mt-6">
+          <p className="mb-4 text-center text-xs font-extrabold uppercase tracking-[0.2em] text-[color:var(--muted)]">
             {kind === "practice" ? "Práctica · no suma" : "Oficial · cuenta"}
           </p>
           <GameHost
@@ -183,7 +195,7 @@ export default function PlayPage() {
           />
           <Button
             variant="ghost"
-            className="mt-3 w-full font-bold text-[color:var(--muted)]"
+            className="mt-4 w-full font-bold text-[color:var(--muted)]"
             onClick={() => setKind(null)}
           >
             Cancelar
